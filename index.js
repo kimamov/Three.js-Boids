@@ -13,13 +13,14 @@ class Boids {
             antialias: true
         });
         this.renderContainer = document.getElementById('renderContainer');
+        this.resize();
+        this.renderContainer.appendChild(this.renderer.domElement)
+        window.addEventListener("resize", this.resize)
         this.actors = []
     }
 
     init = () => {
-        this.resize();
-        this.renderContainer.appendChild(this.renderer.domElement)
-        window.addEventListener("resize", this.resize)
+        
 
     }
 
@@ -33,7 +34,7 @@ class Boids {
     addActor = (posX = 0, posY = 0, posZ = 0) => {
         const geometry = new THREE.BoxGeometry(0.2, 0.2, 0.2);
         const material = new THREE.MeshNormalMaterial();
-        const mesh = new FlyingActor(geometry, material);
+        const mesh = new Boid(geometry, material);
         mesh.velocity
         mesh.position.set(posX, posY, posZ);
         /* mesh.velocity.set(Math.random()/100,Math.random()/100,Math.random()/100); */
@@ -92,17 +93,19 @@ class Boids {
 
 }
 
-class FlyingActor extends THREE.Mesh {
+class Boid extends THREE.Mesh {
     acceleration = new THREE.Vector3(0);
     velocity = new THREE.Vector3(0, 0, 0);
-    maxForce = 0.008;
-    maxSpeed = 0.06;
+    
+    maxForce = 0.006;
+    maxSpeed = 0.08;
 
-    seperationDist = 0.28;
+    seperationDist = 0.08;
     allignDist = 0.6;
+    homeDist=20.0;
 
-    seperationWeight = 1.4;
-    allignmentWeight = 1.0;
+    seperationWeight = 1.5;
+    allignmentWeight = 1.1;
     cohesionWeight = 1.0;
 
     constructor(geometry, material) {
@@ -134,14 +137,13 @@ class FlyingActor extends THREE.Mesh {
         cohesion.multiplyScalar(this.cohesionWeight);
         
 
-        this.velocity.add(seperation);
-        this.velocity.add(allign);
-        this.velocity.add(cohesion);
+        this.acceleration.add(seperation);
+        this.acceleration.add(allign);
+        this.acceleration.add(cohesion);
         
-        if(this.position.length()>8.5){
-            
+        if(this.position.length()>this.homeDist){
             const homeForce=this.steerTo(new THREE.Vector3(0,0,0)).multiplyScalar(1.0);
-            this.velocity.sub(homeForce);
+            this.acceleration.sub(homeForce);
         }
         
     }
@@ -175,7 +177,7 @@ class FlyingActor extends THREE.Mesh {
             const actorDist = this.position.distanceTo(otherActors[i].position);
 
             if (actorDist > 0 && actorDist < this.seperationDist) {
-                const vecDir = new THREE.Vector3().subVectors(this.position, otherActors[i].position/* , this.position */);
+                const vecDir = new THREE.Vector3().subVectors(this.position, otherActors[i].position);
                 vecDir.normalize()
                 vecDir.divideScalar(actorDist);
                 steer.add(vecDir);
