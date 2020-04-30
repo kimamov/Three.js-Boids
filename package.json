@@ -1,0 +1,22 @@
+{
+  "name": "three.js_boids",
+  "version": "1.0.0",
+  "description": "3d boids using three.js",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kantimam/Three.js-Boids.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/kantimam/Three.js-Boids/issues"
+  },
+  "homepage": "https://github.com/kantimam/Three.js-Boids#readme",
+  "dependencies": {
+    "three": "^0.115.0"
+  }
+}
