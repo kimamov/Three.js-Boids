@@ -17,12 +17,6 @@ class BoidsRenderer {
         window.addEventListener("resize", this.resize)
     }
 
-    /* init = () => {
-        const boids = new Boids();
-        boids.createRandom(30);
-        console.log(boids)
-        this.scene.add(boids.boids);
-    } */
 
     resize = () => {
         this.camera.aspect = this.renderContainer.clientWidth / this.renderContainer.clientHeight;
@@ -58,8 +52,31 @@ class BoidsRenderer {
 }
 
 class Boids {
-    constructor() {
+    constructor(options = {
+        accelerationVector: new THREE.Vector3(),
+        velocityVector: new THREE.Vector3(),
+        maxForce: 0.03,
+        maxSpeed: 0.4,
+        seperationDist: 1.1,
+        allignDist: 10,
+        cohesionDist: 10,
+        homeDist: 200.0,
+        seperationWeight: 1.5,
+        allignmentWeight: 1.1,
+        cohesionWeight: 1.0
+    }) {
         this.boids = new THREE.Group();
+
+        this.maxForce = options.maxForce;
+        this.maxSpeed = options.maxSpeed;
+
+        this.seperationDist = options.seperationDist;
+        this.allignDist = options.allignDist;
+        this.cohesionDist = options.cohesionDist;
+        this.homeDist = options.homeDist;
+        this.seperationWeight = options.seperationWeight;
+        this.allignmentWeight = options.allignmentWeight;
+        this.cohesionWeight = options.cohesionWeight;
     }
 
     createRandom = (count = 60) => {
@@ -82,6 +99,27 @@ class Boids {
         mesh.position.set(posX, posY, posZ);
         this.boids.add(mesh);
         return this.boids;
+    }
+
+    updateBoidsOptions = (
+        options = {
+            acceleration,
+            velocity,
+            maxForce,
+            maxSpeed,
+            seperationDist,
+            allignDist,
+            cohesionDist,
+            homeDist,
+            seperationWeight,
+            allignmentWeight,
+            cohesionWeight
+        }) => 
+    {
+        /* loop over all boids and update their options */
+        for(const boid of this.boids.children){
+            boid.updateOptions(options);
+        }
     }
 
     createRandom = (count = 60) => {
@@ -109,9 +147,6 @@ class Boids {
         }
     }
 
-
-
-
 }
 
 /* class Boids {
@@ -124,8 +159,8 @@ class Boid extends THREE.Mesh {
         geometry = new THREE.ConeGeometry(1, 3, 5),
         material = new THREE.MeshNormalMaterial(),
         options = {
-            accelerationVector: new THREE.Vector3(),
-            velocityVector: new THREE.Vector3(),
+            acceleration: new THREE.Vector3(),
+            velocity: new THREE.Vector3(),
             maxForce: 0.03,
             maxSpeed: 0.4,
             seperationDist: 1.1,
@@ -139,8 +174,8 @@ class Boid extends THREE.Mesh {
     ) {
         super(geometry, material); // create the actual mesh
 
-        this.acceleration = options.accelerationVector;
-        this.velocity = options.velocityVector;
+        this.acceleration = options.acceleration;
+        this.velocity = options.velocity;
 
         this.maxForce = options.maxForce;
         this.maxSpeed = options.maxSpeed;
@@ -153,6 +188,30 @@ class Boid extends THREE.Mesh {
         this.allignmentWeight = options.allignmentWeight;
         this.cohesionWeight = options.cohesionWeight;
     }
+
+    updateOptions = (
+        options = {
+            acceleration,
+            velocity,
+            maxForce,
+            maxSpeed,
+            seperationDist,
+            allignDist,
+            cohesionDist,
+            homeDist,
+            seperationWeight,
+            allignmentWeight,
+            cohesionWeight
+        }) => {
+        /* if class has property you are allowed to replace it with updateOptions */
+        for (const key in options) {
+            if (this.hasOwnProperty(key)) {
+                this[key] = options[key];
+            }
+        }
+    }
+
+
     update = (actors) => {
         this.boidBehavior(actors)
         this.applyForce();
@@ -161,8 +220,8 @@ class Boid extends THREE.Mesh {
         this.acceleration.set(0, 0, 0); // reset forces
     }
 
-    rotateMesh=()=>{
-        this.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), this.velocity.clone().normalize());
+    rotateMesh = () => {
+        this.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), this.velocity.clone().normalize());
     }
 
     applyForce = () => {
@@ -174,7 +233,7 @@ class Boid extends THREE.Mesh {
     }
 
     boidBehavior = (actors) => {
-        const [allignment, seperation, cohesion]=this.calcForces(actors);
+        const [allignment, seperation, cohesion] = this.calcForces(actors);
 
         /* apply weights */
         seperation.multiplyScalar(this.seperationWeight);
@@ -204,98 +263,23 @@ class Boid extends THREE.Mesh {
         return steer;
     }
 
-    
-    /* nice 3 functions to calculate forces one by one unfortunately looping multiple times is kinda meh for performance */
-    seperation = (otherActors) => {
-        // apply force that steers body away from others
-        const steer = new THREE.Vector3(0, 0, 0);
-        let closeActors = 0;
-
-        const actorsLen = otherActors.length;
-
-        for (let i = 0; i < actorsLen; i++) {
-            const actorDist = this.position.distanceTo(otherActors[i].position);
-
-            if (actorDist > 0 && actorDist < this.seperationDist) {
-                const vecDir = new THREE.Vector3().subVectors(this.position, otherActors[i].position);
-                vecDir.normalize()
-                vecDir.divideScalar(actorDist);
-                steer.add(vecDir);
-                closeActors++;
-            }
-        }
-        if (closeActors > 0) {
-            steer.divideScalar(closeActors)
-
-        }
-
-        if (steer.length() > 0) {
-            steer.setLength(this.maxSpeed);
-            steer.sub(this.velocity);
-            steer.clampLength(0, this.maxForce)
-        }
-        return steer;
-    }
-
-    allignment = (otherActors) => {
-        const sum = new THREE.Vector3(0, 0, 0);
-
-        let closeActors = 0;
-        const actorsLen = otherActors.length;
-
-        for (let i = 0; i < actorsLen; i++) {
-            const actorDist = this.position.distanceTo(otherActors[i].position);
-            if (actorDist > 0 && actorDist < this.allignDist) {
-                sum.add(otherActors[i].velocity)
-                closeActors++;
-            }
-        }
-        if (closeActors > 0) {
-            sum.divideScalar(closeActors);
-            sum.setLength(this.maxSpeed);
-            sum.sub(this.velocity);
-            sum.clampLength(0, this.maxForce);
-            return sum;
-        } else return new THREE.Vector3(0, 0, 0);
-
-    }
-
-    cohesion = (otherActors) => {
-        const sum = new THREE.Vector3(0, 0, 0);
-        let closeActors = 0;
-        const actorsLen = otherActors.length;
-
-        for (let i = 0; i < actorsLen; i++) {
-            const actorDist = this.position.distanceTo(otherActors[i].position);
-            if (actorDist > 0 && actorDist < this.allignDist) {
-                sum.add(otherActors[i].position)
-                closeActors++;
-            }
-        }
-        if (closeActors > 0) {
-            sum.divideScalar(closeActors);
-            /* console.log(sum) */
-            return this.steerTo(sum);
-        }
-        return new THREE.Vector3(0, 0, 0);
-    }
 
     /* merge of of the 3 functions  to improve performance */
-    calcForces=(otherActors)=>{
+    calcForces = (otherActors) => {
         const seperationSum = new THREE.Vector3(0, 0, 0);
         const allignmentSum = new THREE.Vector3(0, 0, 0);
         const cohesionSum = new THREE.Vector3(0, 0, 0);
 
-        let seperationCount=0;
-        let allignmentCount=0;
-        let cohesionCount=0;
-        
+        let seperationCount = 0;
+        let allignmentCount = 0;
+        let cohesionCount = 0;
+
         const actorsLen = otherActors.length;
 
         for (let i = 0; i < actorsLen; i++) {
             /* get distance of current boid the the boid at pos i */
             const actorDist = this.position.distanceTo(otherActors[i].position);
-            if(actorDist>0){
+            if (actorDist > 0) {
                 /* sum up all velocity of all neighbors in a given distance  */
                 if (actorDist < this.allignDist) {
                     allignmentSum.add(otherActors[i].velocity)
@@ -315,7 +299,7 @@ class Boid extends THREE.Mesh {
                     seperationCount++;
                 }
             }
-            
+
         }
 
         /* calc allignment force */
@@ -324,7 +308,7 @@ class Boid extends THREE.Mesh {
             allignmentSum.setLength(this.maxSpeed);
             allignmentSum.sub(this.velocity);
             allignmentSum.clampLength(0, this.maxForce);
-        } else allignmentSum.set(0,0,0);
+        } else allignmentSum.set(0, 0, 0);
 
         /* calc cohesion force */
         if (cohesionCount > 0) {
@@ -352,7 +336,7 @@ class Boid extends THREE.Mesh {
 function init() {
     const boidsRenderer = new BoidsRenderer();
     const boids = new Boids();
-    boids.createRandom(1000);
+    boids.createRandom(100);
     boidsRenderer.scene.add(boids.boids);
     boidsRenderer.updateFunction = () => {
         boids.update();
