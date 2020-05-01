@@ -130,6 +130,7 @@ class Boid extends THREE.Mesh {
             maxSpeed: 0.4,
             seperationDist: 1.1,
             allignDist: 10,
+            cohesionDist: 10,
             homeDist: 200.0,
             seperationWeight: 1.5,
             allignmentWeight: 1.1,
@@ -146,6 +147,7 @@ class Boid extends THREE.Mesh {
 
         this.seperationDist = options.seperationDist;
         this.allignDist = options.allignDist;
+        this.cohesionDist = options.cohesionDist;
         this.homeDist = options.homeDist;
         this.seperationWeight = options.seperationWeight;
         this.allignmentWeight = options.allignmentWeight;
@@ -172,19 +174,19 @@ class Boid extends THREE.Mesh {
     }
 
     boidBehavior = (actors) => {
-        const seperation = this.seperation(actors);
-        const allign = this.allignment(actors);
-        const cohesion = this.cohesion(actors);
+        const [allignment, seperation, cohesion]=this.calcForces(actors);
 
+        /* apply weights */
         seperation.multiplyScalar(this.seperationWeight);
-        allign.multiplyScalar(this.allignmentWeight);
+        allignment.multiplyScalar(this.allignmentWeight);
         cohesion.multiplyScalar(this.cohesionWeight);
 
-
+        /* update total force */
         this.acceleration.add(seperation);
-        this.acceleration.add(allign);
+        this.acceleration.add(allignment);
         this.acceleration.add(cohesion);
 
+        /* apply extra force that returns boids to center eventually */
         if (this.position.length() > this.homeDist) {
             const homeForce = this.steerTo(new THREE.Vector3(0, 0, 0)).multiplyScalar(1.0);
             this.acceleration.sub(homeForce);
@@ -202,14 +204,8 @@ class Boid extends THREE.Mesh {
         return steer;
     }
 
-    dontLeaveWorld = (distance, treshhold) => {
-        // apply force that prevents body from leaving a certain region most likely a sphere for now so distance from center should be fine
-        const vecLen = this.position.length();
-        if (vecLen > (distance - treshhold)) {
-            return this.steerTo(new THREE.Vector3(0, 0, 0));
-        }
-    }
-
+    
+    /* nice 3 functions to calculate forces one by one unfortunately looping multiple times is kinda meh for performance */
     seperation = (otherActors) => {
         // apply force that steers body away from others
         const steer = new THREE.Vector3(0, 0, 0);
@@ -284,7 +280,69 @@ class Boid extends THREE.Mesh {
         return new THREE.Vector3(0, 0, 0);
     }
 
+    /* merge of of the 3 functions  to improve performance */
+    calcForces=(otherActors)=>{
+        const seperationSum = new THREE.Vector3(0, 0, 0);
+        const allignmentSum = new THREE.Vector3(0, 0, 0);
+        const cohesionSum = new THREE.Vector3(0, 0, 0);
 
+        let seperationCount=0;
+        let allignmentCount=0;
+        let cohesionCount=0;
+        
+        const actorsLen = otherActors.length;
+
+        for (let i = 0; i < actorsLen; i++) {
+            /* get distance of current boid the the boid at pos i */
+            const actorDist = this.position.distanceTo(otherActors[i].position);
+            if(actorDist>0){
+                /* sum up all velocity of all neighbors in a given distance  */
+                if (actorDist < this.allignDist) {
+                    allignmentSum.add(otherActors[i].velocity)
+                    allignmentCount++;
+                }
+                /* sum up all POSITIONS of all neighbors in a given distance */
+                if (actorDist < this.cohesionDist) {
+                    cohesionSum.add(otherActors[i].position)
+                    cohesionCount++;
+                }
+                /* sum up vetors pointing away from too close neighbors */
+                if (actorDist < this.seperationDist) {
+                    const vecDir = new THREE.Vector3().subVectors(this.position, otherActors[i].position);
+                    vecDir.normalize()
+                    vecDir.divideScalar(actorDist);
+                    seperationSum.add(vecDir);
+                    seperationCount++;
+                }
+            }
+            
+        }
+
+        /* calc allignment force */
+        if (allignmentCount > 0) {
+            allignmentSum.divideScalar(allignmentCount);
+            allignmentSum.setLength(this.maxSpeed);
+            allignmentSum.sub(this.velocity);
+            allignmentSum.clampLength(0, this.maxForce);
+        } else allignmentSum.set(0,0,0);
+
+        /* calc cohesion force */
+        if (cohesionCount > 0) {
+            cohesionSum.divideScalar(cohesionCount);
+            cohesionSum.copy(this.steerTo(cohesionSum));
+        }
+
+        /* calc seperation force */
+        if (seperationCount > 0) {
+            seperationSum.divideScalar(seperationCount);
+        }
+        if (seperationSum.length() > 0) {
+            seperationSum.setLength(this.maxSpeed);
+            seperationSum.sub(this.velocity);
+            seperationSum.clampLength(0, this.maxForce)
+        }
+        return [allignmentSum, cohesionSum, seperationSum];
+    }
 
 
 
@@ -294,7 +352,7 @@ class Boid extends THREE.Mesh {
 function init() {
     const boidsRenderer = new BoidsRenderer();
     const boids = new Boids();
-    boids.createRandom(600);
+    boids.createRandom(1000);
     boidsRenderer.scene.add(boids.boids);
     boidsRenderer.updateFunction = () => {
         boids.update();
