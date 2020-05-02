@@ -1,11 +1,17 @@
 import * as THREE from './node_modules/three/build/three.module.js';
-
+import {
+    Boid3D,
+    Boid2D
+} from './Boid.mjs';
 
 
 class BoidsRenderer {
     updateFunction;
-    constructor() {
-        this.camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 300);
+    constructor(type = "3D") {
+        this.type = type;
+        this.camera = type === "2D" ?
+            new THREE.OrthographicCamera(window.innerWidth / -2, window.innerWidth / 2, window.innerHeight / -2, window.innerHeight / 2, 1, 1000) :
+            new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 1000)
         this.camera.position.z = 20;
         this.scene = new THREE.Scene();
         this.renderer = new THREE.WebGLRenderer({
@@ -17,14 +23,32 @@ class BoidsRenderer {
         window.addEventListener("resize", this.resize)
     }
 
+    setMode2d = () => {
+        if(this.camera.isOrthographicCamera) return
+        this.camera = new THREE.OrthographicCamera(window.innerWidth / -2, window.innerWidth / 2, window.innerHeight / -2, window.innerHeight / 2, 1, 1000)
+
+    }
+    setMode3d = () => {
+        if(!this.camera.isOrthographicCamera) return
+        this.camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 1000);
+    }
 
     resize = () => {
-        this.camera.aspect = this.renderContainer.clientWidth / this.renderContainer.clientHeight;
+        this.camera.isOrthographicCamera ?
+            this.resizeOrtho() :
+            this.camera.aspect = this.renderContainer.clientWidth / this.renderContainer.clientHeight;
+
         this.camera.updateProjectionMatrix();
         this.renderer.setSize(this.renderContainer.clientWidth, this.renderContainer.clientHeight);
 
     }
 
+    resizeOrtho = () => {
+        this.camera.left = window.innerWidth / -2;
+        this.camera.right = window.innerWidth / 2;
+        this.camera.top = window.innerHeight / -2;
+        this.camera.bottom = window.innerHeight / 2;
+    }
 
     start = () => {
         console.log(this.scene)
@@ -92,14 +116,22 @@ class Boids {
     }
 
 
-    createBoid = (posX = 0, posY = 0, posZ = 0) => {
-        const geometry = new THREE.ConeGeometry(1, 3, 5);
+    createBoid = (posX = 0, posY = 0, posZ = 0, options, type = "3D") => {
+        /* const geometry = new THREE.ConeGeometry(1, 3, 5); */
         const material = new THREE.MeshNormalMaterial();
-        const mesh = new Boid(geometry, material);
+        const mesh = type === "2D" ?
+            new Boid2D(new THREE.ConeGeometry(8, 20, 5), material) :
+            new Boid3D(new THREE.ConeGeometry(1, 3, 5), material);
+
         mesh.position.set(posX, posY, posZ);
         this.boids.add(mesh);
         return this.boids;
     }
+
+    createBoid2D = (posX, posY, options) => this.createBoid(posX, posY, 0, options, "2D");
+
+
+    createBoid3D = (posX, posY, posZ, options) => this.createBoid(posX, posY, posZ, options)
 
     updateBoidsOptions = (
         options = {
@@ -114,20 +146,33 @@ class Boids {
             seperationWeight,
             allignmentWeight,
             cohesionWeight
-        }) => 
-    {
+        }) => {
         /* loop over all boids and update their options */
-        for(const boid of this.boids.children){
+        for (const boid of this.boids.children) {
             boid.updateOptions(options);
         }
     }
 
-    createRandom = (count = 60) => {
-        for (let i = 0; i < count; i++) {
-            this.createBoid(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5);
-        }
+    createRandom = (count = 60, type = "3D") => {
+        if (type === "2D") {
+            for (let i = 0; i < count; i++) {
+                const posXScreenRange = (Math.random() - 0.5) * window.innerWidth;
+                const posYScreenRange = (Math.random() - 0.5) * window.innerHeight;
+                const minScreen = window.innerHeight > window.innerWidth ? window.innerWidth : window.innerHeight;
+                this.createBoid2D(posXScreenRange, posYScreenRange, {
+                    homeDist: minScreen
+                });
+            }
+        } else
+            for (let i = 0; i < count; i++) {
+                this.createBoid3D(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5);
+            }
         return this.boids;
     }
+
+    createRandom2D = (count) => this.createRandom(count, "2D");
+
+    createRandom3D = (count) => this.createRandom(count, "3D");
 
     getCenter = () => {
         const sceneSize = this.boids.children.length;
@@ -149,199 +194,27 @@ class Boids {
 
 }
 
-/* class Boids {
-
-} */
-
-class Boid extends THREE.Mesh {
-
-    constructor(
-        geometry = new THREE.ConeGeometry(1, 3, 5),
-        material = new THREE.MeshNormalMaterial(),
-        options = {
-            acceleration: new THREE.Vector3(),
-            velocity: new THREE.Vector3(),
-            maxForce: 0.03,
-            maxSpeed: 0.4,
-            seperationDist: 1.1,
-            allignDist: 10,
-            cohesionDist: 10,
-            homeDist: 200.0,
-            seperationWeight: 1.5,
-            allignmentWeight: 1.1,
-            cohesionWeight: 1.0
-        }
-    ) {
-        super(geometry, material); // create the actual mesh
-
-        this.acceleration = options.acceleration;
-        this.velocity = options.velocity;
-
-        this.maxForce = options.maxForce;
-        this.maxSpeed = options.maxSpeed;
-
-        this.seperationDist = options.seperationDist;
-        this.allignDist = options.allignDist;
-        this.cohesionDist = options.cohesionDist;
-        this.homeDist = options.homeDist;
-        this.seperationWeight = options.seperationWeight;
-        this.allignmentWeight = options.allignmentWeight;
-        this.cohesionWeight = options.cohesionWeight;
-    }
-
-    updateOptions = (
-        options = {
-            acceleration,
-            velocity,
-            maxForce,
-            maxSpeed,
-            seperationDist,
-            allignDist,
-            cohesionDist,
-            homeDist,
-            seperationWeight,
-            allignmentWeight,
-            cohesionWeight
-        }) => {
-        /* if class has property you are allowed to replace it with updateOptions */
-        for (const key in options) {
-            if (this.hasOwnProperty(key)) {
-                this[key] = options[key];
-            }
-        }
-    }
-
-
-    update = (actors) => {
-        this.boidBehavior(actors)
-        this.applyForce();
-        this.rotateMesh();
-        this.updatePos();
-        this.acceleration.set(0, 0, 0); // reset forces
-    }
-
-    rotateMesh = () => {
-        this.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), this.velocity.clone().normalize());
-    }
-
-    applyForce = () => {
-        this.velocity.add(this.acceleration).clampLength(0, this.maxSpeed);
-    }
-
-    updatePos = () => {
-        this.position.add(this.velocity);
-    }
-
-    boidBehavior = (actors) => {
-        const [allignment, seperation, cohesion] = this.calcForces(actors);
-
-        /* apply weights */
-        seperation.multiplyScalar(this.seperationWeight);
-        allignment.multiplyScalar(this.allignmentWeight);
-        cohesion.multiplyScalar(this.cohesionWeight);
-
-        /* update total force */
-        this.acceleration.add(seperation);
-        this.acceleration.add(allignment);
-        this.acceleration.add(cohesion);
-
-        /* apply extra force that returns boids to center eventually */
-        if (this.position.length() > this.homeDist) {
-            const homeForce = this.steerTo(new THREE.Vector3(0, 0, 0)).multiplyScalar(1.0);
-            this.acceleration.sub(homeForce);
-        }
-
-    }
-
-    steerTo = (target) => {
-        const targetVec = new THREE.Vector3().subVectors(target, this.position);
-
-        targetVec.setLength(this.maxSpeed);
-
-        const steer = new THREE.Vector3().subVectors(this.velocity, targetVec);
-        steer.clampLength(0, this.maxForce)
-        return steer;
-    }
-
-
-    /* merge of of the 3 functions  to improve performance */
-    calcForces = (otherActors) => {
-        const seperationSum = new THREE.Vector3(0, 0, 0);
-        const allignmentSum = new THREE.Vector3(0, 0, 0);
-        const cohesionSum = new THREE.Vector3(0, 0, 0);
-
-        let seperationCount = 0;
-        let allignmentCount = 0;
-        let cohesionCount = 0;
-
-        const actorsLen = otherActors.length;
-
-        for (let i = 0; i < actorsLen; i++) {
-            /* get distance of current boid the the boid at pos i */
-            const actorDist = this.position.distanceTo(otherActors[i].position);
-            if (actorDist > 0) {
-                /* sum up all velocity of all neighbors in a given distance  */
-                if (actorDist < this.allignDist) {
-                    allignmentSum.add(otherActors[i].velocity)
-                    allignmentCount++;
-                }
-                /* sum up all POSITIONS of all neighbors in a given distance */
-                if (actorDist < this.cohesionDist) {
-                    cohesionSum.add(otherActors[i].position)
-                    cohesionCount++;
-                }
-                /* sum up vetors pointing away from too close neighbors */
-                if (actorDist < this.seperationDist) {
-                    const vecDir = new THREE.Vector3().subVectors(this.position, otherActors[i].position);
-                    vecDir.normalize()
-                    vecDir.divideScalar(actorDist);
-                    seperationSum.add(vecDir);
-                    seperationCount++;
-                }
-            }
-
-        }
-
-        /* calc allignment force */
-        if (allignmentCount > 0) {
-            allignmentSum.divideScalar(allignmentCount);
-            allignmentSum.setLength(this.maxSpeed);
-            allignmentSum.sub(this.velocity);
-            allignmentSum.clampLength(0, this.maxForce);
-        } else allignmentSum.set(0, 0, 0);
-
-        /* calc cohesion force */
-        if (cohesionCount > 0) {
-            cohesionSum.divideScalar(cohesionCount);
-            cohesionSum.copy(this.steerTo(cohesionSum));
-        }
-
-        /* calc seperation force */
-        if (seperationCount > 0) {
-            seperationSum.divideScalar(seperationCount);
-        }
-        if (seperationSum.length() > 0) {
-            seperationSum.setLength(this.maxSpeed);
-            seperationSum.sub(this.velocity);
-            seperationSum.clampLength(0, this.maxForce)
-        }
-        return [allignmentSum, cohesionSum, seperationSum];
-    }
 
 
 
-
-}
 
 function init() {
-    const boidsRenderer = new BoidsRenderer();
+    const boidsRenderer = new BoidsRenderer("3D");
     const boids = new Boids();
-    boids.createRandom(100);
+    boids.createRandom3D(400);
+
     boidsRenderer.scene.add(boids.boids);
-    boidsRenderer.updateFunction = () => {
-        boids.update();
-        boidsRenderer.camera.lookAt(boids.getCenter())
-    };
+    if (boidsRenderer.camera.isOrthographicCamera) {
+        boidsRenderer.updateFunction = () => {
+            boids.update();
+        }
+    } else {
+        boidsRenderer.updateFunction = () => {
+            boids.update();
+            boidsRenderer.camera.lookAt(boids.getCenter())
+        };
+    }
+
     /* boids.createRandom(); */
     boidsRenderer.start();
 }
