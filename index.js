@@ -3,7 +3,7 @@ import {
     Boid3D,
     Boid2D
 } from './Boid.mjs';
-
+import FlyControlls from './flyCamera.mjs'
 
 class BoidsRenderer {
     updateFunction;
@@ -21,15 +21,17 @@ class BoidsRenderer {
         this.resize();
         this.renderContainer.appendChild(this.renderer.domElement)
         window.addEventListener("resize", this.resize)
+
+        this.lastRender = 0;
     }
 
     setMode2d = () => {
-        if(this.camera.isOrthographicCamera) return
+        if (this.camera.isOrthographicCamera) return
         this.camera = new THREE.OrthographicCamera(window.innerWidth / -2, window.innerWidth / 2, window.innerHeight / -2, window.innerHeight / 2, 1, 1000)
 
     }
     setMode3d = () => {
-        if(!this.camera.isOrthographicCamera) return
+        if (!this.camera.isOrthographicCamera) return
         this.camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 1000);
     }
 
@@ -53,7 +55,10 @@ class BoidsRenderer {
     start = () => {
         console.log(this.scene)
         if (this.scene.children.length) {
-            if (this.updateFunction) return this.runWithUpdate()
+            if (this.updateFunction) {
+                this.lastRender = Date.now();
+                return this.runWithUpdate();
+            }
             this.run();
         }
 
@@ -66,8 +71,10 @@ class BoidsRenderer {
 
     runWithUpdate = () => {
         requestAnimationFrame(this.runWithUpdate);
-        this.updateFunction();
+        const now = Date.now();
+        this.updateFunction(now - this.lastRender);
         this.render();
+        this.lastRender = now;
     }
 
     render = () => {
@@ -89,7 +96,7 @@ class Boids {
         allignmentWeight: 1.1,
         cohesionWeight: 1.0
     }) {
-        this.boids = new THREE.Group();
+        this.boidsGroup = new THREE.Group();
 
         this.maxForce = options.maxForce;
         this.maxSpeed = options.maxSpeed;
@@ -111,8 +118,8 @@ class Boids {
     }
 
     addBoid = (boid) => {
-        this.boids.add(boid);
-        return this.boids;
+        this.boidsGroup.add(boid);
+        return this.boidsGroup;
     }
 
 
@@ -124,8 +131,8 @@ class Boids {
             new Boid3D(new THREE.ConeGeometry(1, 3, 5), material);
 
         mesh.position.set(posX, posY, posZ);
-        this.boids.add(mesh);
-        return this.boids;
+        this.boidsGroup.add(mesh);
+        return this.boidsGroup;
     }
 
     createBoid2D = (posX, posY, options) => this.createBoid(posX, posY, 0, options, "2D");
@@ -148,7 +155,7 @@ class Boids {
             cohesionWeight
         }) => {
         /* loop over all boids and update their options */
-        for (const boid of this.boids.children) {
+        for (const boid of this.boidsGroup.children) {
             boid.updateOptions(options);
         }
     }
@@ -175,20 +182,20 @@ class Boids {
     createRandom3D = (count) => this.createRandom(count, "3D");
 
     getCenter = () => {
-        const sceneSize = this.boids.children.length;
+        const sceneSize = this.boidsGroup.children.length;
         let averagePos = new THREE.Vector3(0, 0, 0);
         if (!sceneSize) return averagePos;
 
         for (let i = 0; i < sceneSize; i++) {
-            averagePos.add(this.boids.children[i].position);
+            averagePos.add(this.boidsGroup.children[i].position);
         }
         return averagePos.divideScalar(sceneSize);
     }
 
     update = () => {
-        const boidsLen = this.boids.children.length;
+        const boidsLen = this.boidsGroup.children.length;
         for (let i = 0; i < boidsLen; i++) {
-            this.boids.children[i].update(this.boids.children);
+            this.boidsGroup.children[i].update(this.boidsGroup.children);
         }
     }
 
@@ -203,17 +210,33 @@ function init() {
     const boids = new Boids();
     boids.createRandom3D(400);
 
-    boidsRenderer.scene.add(boids.boids);
+    boidsRenderer.scene.add(boids.boidsGroup);
+
+    const cameraController = addCameraControlls(boidsRenderer);
+
+    /* set move speed to something reasonable in range of the boids movement speed*/
+    /*     console.log(boids.boidsGroup.children[0].maxSpeed)
+     */
+
+    const boidSpeed = boids.boidsGroup.children[0].maxSpeed;
+
+    console.log(boidSpeed)
+
+    cameraController.movementSpeed = boidSpeed;
+    cameraController.rollSpeed = 0.002;
+
     if (boidsRenderer.camera.isOrthographicCamera) {
         boidsRenderer.updateFunction = () => {
             boids.update();
         }
     } else {
-        boidsRenderer.updateFunction = () => {
+        boidsRenderer.updateFunction = (delta) => {
             boids.update();
-            boidsRenderer.camera.lookAt(boids.getCenter())
+            /* boidsRenderer.camera.lookAt(boids.getCenter()) */
+            cameraController.update(delta);
         };
     }
+
 
     /* boids.createRandom(); */
     boidsRenderer.start();
@@ -221,3 +244,11 @@ function init() {
 
 
 init();
+
+function addCameraControlls(boidsRenderer) {
+    if (boidsRenderer.camera.isOrthographicCamera) {
+        return console.warn("can only add camera controlls to a non orthographic camera. Please switch to 3d mode")
+    }
+
+    return new FlyControlls(boidsRenderer.camera, boidsRenderer.renderer.domElement)
+}
