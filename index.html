@@ -15,7 +15,7 @@
             position: relative;
         }
 
-        .options {
+        #optionsContainer {
             position: fixed;
             top: 2rem;
             right: 2rem;
@@ -23,7 +23,7 @@
             height: 3rem;
             width: 3rem;
             display: flex;
-            transition: 2s;
+            transition: 0.6s;
         }
 
         .optionsInner {
@@ -36,7 +36,7 @@
 
         .optionsContent {
             display: none;
-            background-color: lightpink;
+            /* background-color: lightpink; */
             min-height: 20rem;
         }
 
@@ -55,13 +55,13 @@
         }
 
         /* .options:hover, */
-        .options.open {
+        #optionsContainer.open {
             height: 40rem;
             width: 20rem;
             background-color: lightgray;
         }
 
-        .options.open .optionsContent {
+        #optionsContainer.open .optionsContent {
             display: block;
         }
 
@@ -78,7 +78,7 @@
 
 <body>
     <main>
-        <div class="options openA">
+        <div id="optionsContainer">
             <div class="optionsInner">
                 <div class="optionsToggle">
                     X

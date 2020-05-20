@@ -7,65 +7,21 @@ export class Boid3D extends THREE.Mesh {
     constructor(
         geometry = new THREE.ConeGeometry(1, 3, 5),
         material = new THREE.MeshNormalMaterial(),
-        options = {
-            acceleration: new THREE.Vector3(),
-            velocity: new THREE.Vector3(),
-            maxForce: 0.03,
-            maxSpeed: 0.4,
-            seperationDist: 1.1,
-            allignDist: 10,
-            cohesionDist: 10,
-            homeDist: 400.0,
-            seperationWeight: 1.5,
-            allignmentWeight: 1.1,
-            cohesionWeight: 1.0,
-            homeWeight: 0.2
-        }
     ) {
         super(geometry, material); // create the actual mesh
 
-        this.acceleration = options.acceleration;
-        this.velocity = options.velocity;
+        this.acceleration = new THREE.Vector3(0);
+        this.velocity = new THREE.Vector3(0);
 
-        this.maxForce = options.maxForce;
-        this.maxSpeed = options.maxSpeed;
 
-        this.seperationDist = options.seperationDist;
-        this.allignDist = options.allignDist;
-        this.cohesionDist = options.cohesionDist;
-        this.homeDist = options.homeDist;
-        this.seperationWeight = options.seperationWeight;
-        this.allignmentWeight = options.allignmentWeight;
-        this.cohesionWeight = options.cohesionWeight;
-        this.homeWeight=options.homeWeight;
-    }
-
-    updateOptions = (
-        options = {
-            acceleration,
-            velocity,
-            maxForce,
-            maxSpeed,
-            seperationDist,
-            allignDist,
-            cohesionDist,
-            homeDist,
-            seperationWeight,
-            allignmentWeight,
-            cohesionWeight
-        }) => {
-        /* if class has property you are allowed to replace it with updateOptions */
-        for (const key in options) {
-            if (this.hasOwnProperty(key)) {
-                this[key] = options[key];
-            }
-        }
     }
 
 
-    update = (actors) => {
-        this.boidBehavior(actors)
-        this.applyForce();
+
+
+    update = (actors, boidsSettings) => {
+        this.boidBehavior(actors, boidsSettings)
+        this.applyForce(boidsSettings.maxSpeed);
         this.rotateMesh();
         this.updatePos();
         this.acceleration.set(0, 0, 0); // reset forces
@@ -75,21 +31,21 @@ export class Boid3D extends THREE.Mesh {
         this.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), this.velocity.clone().normalize());
     }
 
-    applyForce = () => {
-        this.velocity.add(this.acceleration).clampLength(0, this.maxSpeed);
+    applyForce = (maxSpeed) => {
+        this.velocity.add(this.acceleration).clampLength(0, maxSpeed);
     }
 
     updatePos = () => {
         this.position.add(this.velocity);
     }
 
-    boidBehavior = (actors) => {
-        const [allignment, seperation, cohesion] = this.calcForces(actors);
+    boidBehavior = (actors, boidsSettings) => {
+        const [allignment, seperation, cohesion] = this.calcForces(actors, boidsSettings);
 
         /* apply weights */
-        seperation.multiplyScalar(this.seperationWeight);
-        allignment.multiplyScalar(this.allignmentWeight);
-        cohesion.multiplyScalar(this.cohesionWeight);
+        seperation.multiplyScalar(boidsSettings.seperationWeight);
+        allignment.multiplyScalar(boidsSettings.allignmentWeight);
+        cohesion.multiplyScalar(boidsSettings.cohesionWeight);
 
         /* update total force */
         this.acceleration.add(seperation);
@@ -97,26 +53,33 @@ export class Boid3D extends THREE.Mesh {
         this.acceleration.add(cohesion);
 
         /* apply extra force that returns boids to center eventually */
-        if (this.position.length() > this.homeDist) {
-            const homeForce = this.steerTo(new THREE.Vector3(0, 0, 0)).multiplyScalar(this.homeWeight);
+        if (this.position.length() > boidsSettings.homeDist) {
+            const homeForce = this.steerTo(
+                new THREE.Vector3(0, 0, 0),
+                boidsSettings.maxSpeed,
+                boidsSettings.maxForce
+            ).multiplyScalar(boidsSettings.homeWeight);
+
+            /* console.log(homeForce)
+            debugger */
             this.acceleration.sub(homeForce);
         }
 
     }
 
-    steerTo = (target) => {
+    steerTo = (target, maxSpeed, maxForce) => {
         const targetVec = new THREE.Vector3().subVectors(target, this.position);
 
-        targetVec.setLength(this.maxSpeed);
+        targetVec.setLength(maxSpeed);
 
         const steer = new THREE.Vector3().subVectors(this.velocity, targetVec);
-        steer.clampLength(0, this.maxForce)
+        steer.clampLength(0, maxForce)
         return steer;
     }
 
 
     /* merge of of the 3 functions  to improve performance */
-    calcForces = (otherActors) => {
+    calcForces = (otherActors, settings) => {
         const seperationSum = new THREE.Vector3(0, 0, 0);
         const allignmentSum = new THREE.Vector3(0, 0, 0);
         const cohesionSum = new THREE.Vector3(0, 0, 0);
@@ -132,17 +95,17 @@ export class Boid3D extends THREE.Mesh {
             const actorDist = this.position.distanceTo(otherActors[i].position);
             if (actorDist > 0) {
                 /* sum up all velocity of all neighbors in a given distance  */
-                if (actorDist < this.allignDist) {
+                if (actorDist < settings.allignDist) {
                     allignmentSum.add(otherActors[i].velocity)
                     allignmentCount++;
                 }
                 /* sum up all POSITIONS of all neighbors in a given distance */
-                if (actorDist < this.cohesionDist) {
+                if (actorDist < settings.cohesionDist) {
                     cohesionSum.add(otherActors[i].position)
                     cohesionCount++;
                 }
                 /* sum up vetors pointing away from too close neighbors */
-                if (actorDist < this.seperationDist) {
+                if (actorDist < settings.seperationDist) {
                     const vecDir = new THREE.Vector3().subVectors(this.position, otherActors[i].position);
                     vecDir.normalize()
                     vecDir.divideScalar(actorDist);
@@ -156,15 +119,15 @@ export class Boid3D extends THREE.Mesh {
         /* calc allignment force */
         if (allignmentCount > 0) {
             allignmentSum.divideScalar(allignmentCount);
-            allignmentSum.setLength(this.maxSpeed);
+            allignmentSum.setLength(settings.maxSpeed);
             allignmentSum.sub(this.velocity);
-            allignmentSum.clampLength(0, this.maxForce);
+            allignmentSum.clampLength(0, settings.maxForce);
         } else allignmentSum.set(0, 0, 0);
 
         /* calc cohesion force */
         if (cohesionCount > 0) {
             cohesionSum.divideScalar(cohesionCount);
-            cohesionSum.copy(this.steerTo(cohesionSum));
+            cohesionSum.copy(this.steerTo(cohesionSum, settings.maxSpeed, settings.maxForce));
         }
 
         /* calc seperation force */
@@ -172,9 +135,9 @@ export class Boid3D extends THREE.Mesh {
             seperationSum.divideScalar(seperationCount);
         }
         if (seperationSum.length() > 0) {
-            seperationSum.setLength(this.maxSpeed);
+            seperationSum.setLength(settings.maxSpeed);
             seperationSum.sub(this.velocity);
-            seperationSum.clampLength(0, this.maxForce)
+            seperationSum.clampLength(0, settings.maxForce)
         }
         return [allignmentSum, cohesionSum, seperationSum];
     }
@@ -222,7 +185,7 @@ export class Boid2D extends THREE.Mesh {
         this.seperationWeight = options.seperationWeight;
         this.allignmentWeight = options.allignmentWeight;
         this.cohesionWeight = options.cohesionWeight;
-        this.homeWeight=options.homeWeight;
+        this.homeWeight = options.homeWeight;
     }
 
     updateOptions = (
