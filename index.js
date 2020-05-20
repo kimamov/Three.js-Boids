@@ -29,11 +29,13 @@ class BoidsRenderer {
 
     setMode2d = () => {
         if (this.camera.isOrthographicCamera) return
+        this.type = "2D";
         this.camera = new THREE.OrthographicCamera(window.innerWidth / -2, window.innerWidth / 2, window.innerHeight / -2, window.innerHeight / 2, 1, 1000)
 
     }
     setMode3d = () => {
         if (!this.camera.isOrthographicCamera) return
+        this.type = "3D";
         this.camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 1000);
     }
 
@@ -88,8 +90,8 @@ class BoidsRenderer {
 
 class Boids {
     constructor(options = {
-        accelerationVector: new THREE.Vector3(),
-        velocityVector: new THREE.Vector3(),
+        /* accelerationVector: new THREE.Vector3(),
+        velocityVector: new THREE.Vector3(), */
         maxForce: 0.03,
         maxSpeed: 0.4,
         seperationDist: 1.1,
@@ -104,25 +106,10 @@ class Boids {
     }) {
         this.boidsGroup = new THREE.Group();
 
-        /* this.maxForce = options.maxForce;
-        this.maxSpeed = options.maxSpeed;
-
-        this.seperationDist = options.seperationDist;
-        this.allignDist = options.allignDist;
-        this.cohesionDist = options.cohesionDist;
-        this.homeDist = options.homeDist;
-        this.seperationWeight = options.seperationWeight;
-        this.allignmentWeight = options.allignmentWeight;
-        this.cohesionWeight = options.cohesionWeight; */
         this.options = options;
     }
 
-    createRandom = (count = 60) => {
-        this.init();
-        for (let i = 0; i < count; i++) {
-            this.addActor(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5);
-        }
-    }
+
 
     addBoid = (boid) => {
         this.boidsGroup.add(boid);
@@ -223,15 +210,15 @@ class Boids {
 
 
 class App {
-    optionsToggle;
     optionsContainer;
+    cameraController;
+    cameraButton;
     constructor() {
         this.renderer = new BoidsRenderer("3D");
         this.boids = new Boids();
         this.count = 400;
         this.mode = "3D";
-        this.cemeraMode = "lookAt";
-        this.cameraController = addCameraControlls(this.renderer);
+        this.cameraMode = "lookAt";
 
         this.setCameraDefault();
 
@@ -244,36 +231,118 @@ class App {
             ...this.boids.options
         }
 
+        this.initialCameraPos = this.renderer.camera.position.clone();
 
         this.createDOMControlls();
     }
 
     createDOMControlls = () => {
+        /* add event listeners to the dom elements */
         this.optionsContainer = document.querySelector('#optionsContainer')
-        this.optionsToggle = document.querySelector(".optionsToggle");
+        const toggle = document.querySelector("#optionsToggle");
 
-        this.optionsToggle.addEventListener('click', (e) => {
+        toggle.addEventListener('click', (e) => {
             this.optionsContainer.classList.toggle('open')
         })
 
-        document.querySelector(".optionsContent").innerHTML = `
-            <pre>
-                ${JSON.stringify(this.initialBoidsOptions, null, 2)}
-            </pre>
-        `
+        this.createButtonControlls();
+
+        this.createOptionsInputs();
+
+    }
+
+    createButtonControlls = () => {
+        document.querySelector('#startStopButton').addEventListener('click', (e) => {
+            this.stopStart();
+            e.target.innerHTML = this.running ? "STOP" : "START";
+        })
+
+        document.querySelector('#resetButton').addEventListener('click', (e) => {
+            /* reset boids options */
+            this.boids.options = {
+                ...this.initialBoidsOptions
+            };
+            /* rest renderer camera position */
+            this.renderer.camera.position.copy(this.initialCameraPos);
+            this.setCameraDefault();
+            /* update inputs */
+            for (const key in this.boids.options) {
+                const input = document.querySelector(`#${key}_input`);
+                if (input) input.value = this.boids.options[key];
+            }
+        })
+
+        document.querySelector('#button2D').addEventListener('click', (e) => {
+            this.setMode2D();
+        })
+
+        document.querySelector('#button3D').addEventListener('click', (e) => {
+            this.setMode3D();
+        })
+        this.cameraButton = document.querySelector('#freeCamera')
+        this.cameraButton.addEventListener('click', (e) => {
+            if (this.mode === "2d") return;
+            if (this.cameraMode === "lookAt") {
+                this.setCameraFree();
+            } else {
+                this.setCameraDefault();
+            }
+        })
+    }
+
+    updateCameraButton = () => {
+        if (!this.cameraButton) return;
+        if (this.mode === "2D") {
+            this.cameraButton.disabled = true;
+        } else {
+            this.cameraButton.disabled = false;
+            this.cameraButton.innerHTML = this.cameraMode === "lookAt" ? "Free Camera" : "Follow Camera";
+
+        }
+    }
+
+    createOptionsInputs = () => {
+        const content = document.querySelector('#optionsContent');
+        for (const key in this.boids.options) {
+            /* create input label */
+            const label = document.createElement('label');
+            label.innerHTML = key;
+
+            content.appendChild(label);
+
+            /* create input */
+            const node = document.createElement('input')
+            node.type = 'number'
+            node.id = `${key}_input`
+            node.classList = "numOptions"
+            node.value = this.boids.options[key]
+            node.addEventListener('input', (e) => {
+                console.log(e);
+
+                this.boids.options[key] = e.target.value || 0;
+            })
+
+            content.appendChild(node);
+        }
     }
 
 
 
     setCameraFree = () => {
         if (this.mode === "2D") return;
-        const boidSpeed = boids.boidsGroup.children[0].maxSpeed;
+        this.cameraController = addCameraControlls(this.renderer);
+        const boidSpeed = this.boids.options.maxSpeed;
         this.cameraController.movementSpeed = boidSpeed;
         this.cameraController.rollSpeed = 0.002;
+
         this.renderer.updateFunction = (delta) => {
-            boids.update();
-            cameraController.update(delta);
+            this.boids.update();
+            this.cameraController.update(delta);
         };
+        this.cameraMode = "free";
+        this.mode = "3D";
+
+        this.updateCameraButton();
     }
 
     setCameraDefault = () => {
@@ -282,12 +351,16 @@ class App {
             this.boids.update();
             this.renderer.camera.lookAt(this.boids.getCenter())
         };
+        this.cameraMode = "lookAt";
+        this.mode = "3D";
 
+        this.updateCameraButton();
     }
 
     setMode2D = () => {
         if (this.mode === "2D") return;
-        this.renderer.setMode2d;
+        this.stop();
+        this.renderer.setMode2d();
         this.mode = "2D";
         this.boidsReady = false;
         /* after switching mode create new boids */
@@ -296,25 +369,25 @@ class App {
             this.renderer.updateFunction = () => {
                 this.boids.update();
             }
+            this.start();
         }
 
-
+        this.updateCameraButton();
     }
 
     setMode3D = () => {
         if (this.mode === "3D") return;
-        this.renderer.setMode3d;
+        this.stop();
+        this.renderer.setMode3d();
         this.mode = "3D";
         this.boidsReady = false;
         /* after switching mode create new boids */
-        if (boidsRenderer.camera.isOrthographicCamera) {
-            boidsRenderer.updateFunction = () => {
-                this.boids.update();
-            }
-        }
+        this.setCameraDefault();
+        this.start();
     }
 
     createBoids = () => {
+        this.renderer.scene.remove(this.boids.boidsGroup);
         this.mode === "2D" ? this.boids.createRandom2D(this.count) : this.boids.createRandom3D(this.count);
         this.renderer.scene.add(this.boids.boidsGroup);
         this.boidsReady = true;

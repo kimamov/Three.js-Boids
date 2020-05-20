@@ -204,7 +204,6 @@ const FlyControls = function (object, domElement) {
     };
 
     this.mousedown = function (event) {
-        console.log(this.object);
 
         if (this.domElement !== document) {
 

@@ -6,6 +6,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
     <style>
+        * {
+            box-sizing: border-box;
+        }
+
         html,
         body {
             margin: 0;
@@ -26,21 +30,50 @@
             transition: 0.6s;
         }
 
-        .optionsInner {
-            height: 100%;
+        #optionsInner {
+            min-height: 100%;
             width: 100%;
             position: relative;
 
 
         }
 
-        .optionsContent {
+        #optionsContent {
             display: none;
-            /* background-color: lightpink; */
-            min-height: 20rem;
+            min-height: 100%;
+            padding: 0.6rem;
         }
 
-        .optionsToggle {
+        #optionsContent>h1 {
+            margin: 0;
+            height: 2.4rem;
+            display: flex;
+            align-items: center;
+        }
+
+        #optionsContent>button {
+            margin: 0.4rem 0;
+        }
+
+        input {
+            margin: 0 0 0.8rem 0;
+            display: block;
+            padding: 0;
+            border-radius: 0.4rem;
+            border: none;
+        }
+
+        label {
+            margin: 0.1rem 0;
+            display: block;
+        }
+
+        .numOptions {
+            width: 100%;
+            padding: 0.2rem 0.5rem;
+        }
+
+        #optionsToggle {
             cursor: pointer;
             border-radius: 50%;
             position: absolute;
@@ -56,12 +89,14 @@
 
         /* .options:hover, */
         #optionsContainer.open {
-            height: 40rem;
+            overflow: auto;
+            height: 42rem;
+            max-height: calc(100% - 4rem);
             width: 20rem;
             background-color: lightgray;
         }
 
-        #optionsContainer.open .optionsContent {
+        #optionsContainer.open #optionsContent {
             display: block;
         }
 
@@ -78,13 +113,18 @@
 
 <body>
     <main>
-        <div id="optionsContainer">
-            <div class="optionsInner">
-                <div class="optionsToggle">
+        <div id="optionsContainer" class="open">
+            <div id="optionsInner">
+                <div id="optionsToggle">
                     X
                 </div>
-                <div class="optionsContent">
-
+                <div id="optionsContent">
+                    <h1>SETTINGS</h1>
+                    <button id="startStopButton" type="button">STOP</button>
+                    <button id="resetButton" type="button">RESET</button>
+                    <button id="button2D" type="button">2D</button>
+                    <button id="button3D" type="button">3D</button>
+                    <button id="freeCamera" type="button">Free Camera</button>
                 </div>
             </div>
         </div>
