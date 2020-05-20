@@ -1,26 +1,99 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
     <style>
-        html, body{
+        html,
+        body {
             margin: 0;
         }
-        #renderContainer{
+
+        main {
+            position: relative;
+        }
+
+        .options {
+            position: fixed;
+            top: 2rem;
+            right: 2rem;
+
+            height: 3rem;
+            width: 3rem;
+            display: flex;
+            transition: 2s;
+        }
+
+        .optionsInner {
+            height: 100%;
+            width: 100%;
+            position: relative;
+
+
+        }
+
+        .optionsContent {
+            display: none;
+            background-color: lightpink;
+            min-height: 20rem;
+        }
+
+        .optionsToggle {
+            cursor: pointer;
+            border-radius: 50%;
+            position: absolute;
+            top: 0;
+            right: 0;
+            height: 3rem;
+            width: 3rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: lightgreen;
+        }
+
+        /* .options:hover, */
+        .options.open {
+            height: 40rem;
+            width: 20rem;
+            background-color: lightgray;
+        }
+
+        .options.open .optionsContent {
+            display: block;
+        }
+
+        #renderContainer {
             height: 100vh;
             width: 100%;
         }
-        canvas{
+
+        canvas {
             display: block;
         }
     </style>
 </head>
+
 <body>
-    <div id="renderContainer">
-        <!-- container that the three.js canvas will be placed in -->
-    </div>
+    <main>
+        <div class="options openA">
+            <div class="optionsInner">
+                <div class="optionsToggle">
+                    X
+                </div>
+                <div class="optionsContent">
+
+                </div>
+            </div>
+        </div>
+        <div id="renderContainer">
+            <!-- container that the three.js canvas will be placed in -->
+        </div>
+    </main>
+
     <script type="module" src="index.js"></script>
 </body>
+
 </html>

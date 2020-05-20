@@ -127,8 +127,8 @@ class Boids {
         /* const geometry = new THREE.ConeGeometry(1, 3, 5); */
         const material = new THREE.MeshNormalMaterial();
         const mesh = type === "2D" ?
-            new Boid2D(new THREE.ConeGeometry(8, 20, 5), material) :
-            new Boid3D(new THREE.ConeGeometry(1, 3, 5), material);
+            new Boid2D(new THREE.ConeGeometry(8, 20, 5), material, options) :
+            new Boid3D(new THREE.ConeGeometry(1, 3, 5), material, options);
 
         mesh.position.set(posX, posY, posZ);
         this.boidsGroup.add(mesh);
@@ -160,7 +160,12 @@ class Boids {
         }
     }
 
+    clearBoids = () => {
+        this.boidsGroup = new THREE.Group();
+    }
+
     createRandom = (count = 60, type = "3D") => {
+        this.clearBoids();
         if (type === "2D") {
             for (let i = 0; i < count; i++) {
                 const posXScreenRange = (Math.random() - 0.5) * window.innerWidth;
@@ -215,8 +220,6 @@ function init() {
     const cameraController = addCameraControlls(boidsRenderer);
 
     /* set move speed to something reasonable in range of the boids movement speed*/
-    /*     console.log(boids.boidsGroup.children[0].maxSpeed)
-     */
 
     const boidSpeed = boids.boidsGroup.children[0].maxSpeed;
 
@@ -232,8 +235,8 @@ function init() {
     } else {
         boidsRenderer.updateFunction = (delta) => {
             boids.update();
-            /* boidsRenderer.camera.lookAt(boids.getCenter()) */
-            cameraController.update(delta);
+            boidsRenderer.camera.lookAt(boids.getCenter())
+            //cameraController.update(delta);
         };
     }
 
@@ -242,6 +245,19 @@ function init() {
     boidsRenderer.start();
 }
 
+
+class App {
+    constructor() {
+        this.renderer = new BoidsRenderer("3D");
+        this.boids = new Boids();
+        this.count = 400;
+        this.mode = "3D";
+        this.cemeraMode = "lookAt";
+
+        optionsOpen = false;
+    }
+
+}
 
 init();
 
