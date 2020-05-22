@@ -4,7 +4,7 @@ Watch or fly around with a swarm of angry cones.
 Tweak settings to create your behavior or maybe add your own mesh to make a swarm of of something nicer.   
 
 # Usage
-git clone https://github.com/kantimam/Three.js-Boids.git
+git clone https://github.com/kantimam/Three.js-Boids.git  
 serve index.html with your local server of choice. 
 
 # TODO
