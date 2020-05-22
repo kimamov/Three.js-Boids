@@ -20,6 +20,7 @@
         }
 
         #optionsContainer {
+            overflow: hidden;
             position: fixed;
             top: 2rem;
             right: 2rem;
@@ -28,6 +29,7 @@
             width: 3rem;
             display: flex;
             transition: 0.6s;
+            border-radius: 0.4rem;
         }
 
         #optionsInner {
@@ -41,7 +43,7 @@
         #optionsContent {
             display: none;
             min-height: 100%;
-            padding: 0.6rem;
+            padding: 0.6rem 0.6rem 2rem 0.6rem;
         }
 
         #optionsContent>h1 {
@@ -53,6 +55,10 @@
 
         #optionsContent>button {
             margin: 0.4rem 0;
+        }
+
+        #optionsContent .buttonRow {
+            margin: 0.6rem 0;
         }
 
         input {
@@ -71,29 +77,46 @@
         .numOptions {
             width: 100%;
             padding: 0.2rem 0.5rem;
+            border: 1px solid black;
         }
 
         #optionsToggle {
             cursor: pointer;
             border-radius: 50%;
             position: absolute;
-            top: 0;
-            right: 0;
-            height: 3rem;
-            width: 3rem;
+            top: 0.2rem;
+            right: 0.2rem;
+            height: 2.8rem;
+            width: 2.8rem;
             display: flex;
             justify-content: center;
             align-items: center;
             background-color: lightgreen;
         }
 
+        @keyframes addScrollbar {
+            0% {
+                overflow: hidden;
+            }
+
+            99% {
+                overflow: hidden;
+            }
+
+            100% {
+                overflow: auto;
+            }
+        }
+
         /* .options:hover, */
         #optionsContainer.open {
             overflow: auto;
-            height: 42rem;
+            height: 46rem;
             max-height: calc(100% - 4rem);
             width: 20rem;
-            background-color: lightgray;
+            background-color: rgb(235, 235, 235);
+            animation: 0.6s addScrollbar;
+            /* preven scrollbar from showing while size changes */
         }
 
         #optionsContainer.open #optionsContent {
@@ -120,11 +143,16 @@
                 </div>
                 <div id="optionsContent">
                     <h1>SETTINGS</h1>
-                    <button id="startStopButton" type="button">STOP</button>
-                    <button id="resetButton" type="button">RESET</button>
-                    <button id="button2D" type="button">2D</button>
-                    <button id="button3D" type="button">3D</button>
-                    <button id="freeCamera" type="button">Free Camera</button>
+                    <div class="buttonRow">
+                        <button id="startStopButton" type="button">STOP</button>
+                        <button id="resetButton" type="button">RESET</button>
+                    </div>
+                    <div class="buttonRow">
+                        <button id="button2D" type="button">2D</button>
+                        <button id="button3D" type="button">3D</button>
+                        <button id="freeCamera" type="button">Free Camera</button>
+                    </div>
+
                 </div>
             </div>
         </div>
