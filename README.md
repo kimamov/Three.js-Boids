@@ -9,8 +9,7 @@ serve index.html with your local server of choice.
 
 # TODO
 2d mode only partially implemented. 
-
-Fix homeDist values.
+Fix homeDist values so boids dont instantly leave the window in 2d mode.
 
 Speed of free camera equals the boids speed wich is fine for low speeds but impossible to handle when you increase it to much.
 Maybe add slider for camera movement speed.
