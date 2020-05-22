@@ -334,6 +334,7 @@ class App {
         const boidSpeed = this.boids.options.maxSpeed;
         this.cameraController.movementSpeed = boidSpeed;
         this.cameraController.rollSpeed = 0.002;
+        this.cameraController.dragToLook = true;
 
         this.renderer.updateFunction = (delta) => {
             this.boids.update();
@@ -341,6 +342,7 @@ class App {
         };
         this.cameraMode = "free";
         this.mode = "3D";
+        alert("hold right click to look around and WASD to move")
 
         this.updateCameraButton();
     }
