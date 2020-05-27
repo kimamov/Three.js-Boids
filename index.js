@@ -246,9 +246,7 @@ class App {
     }
 
     resetOptions2d = () => {
-        this.boids.options = {
-            ...boids2dDefaultValues
-        };
+        this.boids.options = boids2dDefaultValues();
 
     }
 
@@ -388,9 +386,8 @@ class App {
         this.mode === "2D" ? (
                 this.boids.createRandom2D(this.count),
                 // 2d renderer has a way different dimensions of the view so options need to be adjusted
-                this.boids.options = {
-                    ...boids2dDefaultValues
-                }
+                this.boids.options = boids2dDefaultValues()
+
             ) :
             (
                 this.boids.createRandom3D(this.count),
@@ -426,17 +423,19 @@ class App {
 
 }
 
-const boids2dDefaultValues = {
-    maxForce: 0.20,
-    maxSpeed: 1.6,
-    seperationDist: 5.1,
-    allignDist: 40,
-    cohesionDist: 40,
-    homeDist: Boids.minScreen() | 200,
-    seperationWeight: 1.5,
-    allignmentWeight: 1.1,
-    cohesionWeight: 1.0,
-    homeWeight: 1.1
+const boids2dDefaultValues = () => {
+    return {
+        maxForce: 0.20,
+        maxSpeed: 1.6,
+        seperationDist: 5.1,
+        allignDist: 40,
+        cohesionDist: 40,
+        homeDist: Boids.minScreen() | 200,
+        seperationWeight: 1.5,
+        allignmentWeight: 1.1,
+        cohesionWeight: 1.0,
+        homeWeight: 1.1
+    }
 }
 
 function addCameraControlls(boidsRenderer) {
