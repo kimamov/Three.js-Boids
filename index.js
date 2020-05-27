@@ -377,8 +377,9 @@ class App {
     createBoids = () => {
         this.renderer.scene.remove(this.boids.boidsGroup);
         this.mode === "2D" ? (
-                this.boids.createRandom2D(this.count), // 2d renderer has a way different dimensions of the view so homeDist needs to be adjusted
-                this.boids.options.homeDist = Boids.minScreen()
+                this.boids.createRandom2D(this.count),
+                // 2d renderer has a way different dimensions of the view so options need to be adjusted
+                this.boids.options = boids2dDefaultValues
             ) :
             (
                 this.boids.createRandom3D(this.count),
@@ -405,7 +406,18 @@ class App {
 
 }
 
-
+const boids2dDefaultValues = {
+    maxForce: 0.20,
+    maxSpeed: 1.6,
+    seperationDist: 5.1,
+    allignDist: 40,
+    cohesionDist: 40,
+    homeDist: Boids.minScreen(),
+    seperationWeight: 1.5,
+    allignmentWeight: 1.1,
+    cohesionWeight: 1.0,
+    homeWeight: 1.1
+}
 
 function addCameraControlls(boidsRenderer) {
     if (boidsRenderer.camera.isOrthographicCamera) {
