@@ -107,7 +107,6 @@ class Boids {
         this.boidsGroup = new THREE.Group();
 
         this.options = options;
-        this.prevHomeDist = this.options.homeDist;
     }
 
 
@@ -147,22 +146,18 @@ class Boids {
 
     static minScreen = () => {
         // returns the smaller dimension of the container currently the window
-        return minScreen = window.innerHeight > window.innerWidth ? window.innerWidth : window.innerHeight;
+        return window.innerHeight > window.innerWidth ? window.innerWidth : window.innerHeight;
     }
 
     createRandom = (count = 60, type = "3D") => {
         this.clearBoids();
         if (type === "2D") {
-            // orthographic camera has way different dimensions of the view
-            this.prevHomeDist = this.homeDist; // save homeDist to restore when going back to 3d
-            this.homeDist = this.minScreen(); // set homeDist to the smaller dimension of the canvas
             for (let i = 0; i < count; i++) {
                 const posXScreenRange = (Math.random() - 0.5) * window.innerWidth;
                 const posYScreenRange = (Math.random() - 0.5) * window.innerHeight;
                 this.createBoid2D(posXScreenRange, posYScreenRange);
             }
         } else {
-            this.homeDist = this.prevHomeDist;
             for (let i = 0; i < count; i++) {
                 this.createBoid3D(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5);
             }
@@ -201,6 +196,7 @@ class App {
     optionsContainer;
     cameraController;
     cameraButton;
+    numInputs = {};
     constructor() {
         this.renderer = new BoidsRenderer("3D");
         this.boids = new Boids();
@@ -311,6 +307,8 @@ class App {
             })
 
             content.appendChild(node);
+
+            this.numInputs[key] = node;
         }
     }
 
@@ -378,9 +376,17 @@ class App {
 
     createBoids = () => {
         this.renderer.scene.remove(this.boids.boidsGroup);
-        this.mode === "2D" ? this.boids.createRandom2D(this.count) : this.boids.createRandom3D(this.count);
+        this.mode === "2D" ? (
+                this.boids.createRandom2D(this.count), // 2d renderer has a way different dimensions of the view so homeDist needs to be adjusted
+                this.boids.options.homeDist = Boids.minScreen()
+            ) :
+            (
+                this.boids.createRandom3D(this.count),
+                this.boids.homeDist = this.initialBoidsOptions.homeDist
+            );
         this.renderer.scene.add(this.boids.boidsGroup);
         this.boidsReady = true;
+        this.numInputs.homeDist.value = this.boids.options.homeDist;
     }
 
     stop = () => {

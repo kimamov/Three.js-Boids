@@ -7,9 +7,13 @@ Tweak settings to create your behavior or maybe add your own mesh to make a swar
 git clone https://github.com/kantimam/Three.js-Boids.git  
 serve index.html with your local server of choice. 
 
-# TODO
-2d mode only partially implemented. 
-Fix homeDist values so boids dont instantly leave the window in 2d mode.
+# Warning
+default values for 2d boids are somewhat horrible.
+Just double all the distances and forces and distances to get more action
 
+# TODO
 Speed of free camera equals the boids speed wich is fine for low speeds but impossible to handle when you increase it to much.
-Maybe add slider for camera movement speed.
+Maybe add slider for camera movement speed.  
+  
+Default values for 2d boids are kinda horrible usually way to low.  
+Maybe create 2 different sets of default values for 2d and 3d
