@@ -247,7 +247,7 @@ class App {
 
     resetOptions2d = () => {
         this.boids.options = {
-            ...this.boids2dDefaultValues
+            ...boids2dDefaultValues
         };
 
     }
@@ -260,7 +260,7 @@ class App {
 
         document.querySelector('#resetButton').addEventListener('click', (e) => {
             /* reset boids options */
-            this.mode == "2d" ? this.resetOptions2d() : this.resetOptions3d();
+            this.mode == "2D" ? this.resetOptions2d() : this.resetOptions3d();
             /* update inputs */
             this.setNumInputs();
         })
@@ -432,7 +432,7 @@ const boids2dDefaultValues = {
     seperationDist: 5.1,
     allignDist: 40,
     cohesionDist: 40,
-    homeDist: Boids.minScreen(),
+    homeDist: Boids.minScreen() | 200,
     seperationWeight: 1.5,
     allignmentWeight: 1.1,
     cohesionWeight: 1.0,
