@@ -250,10 +250,7 @@ class App {
             this.renderer.camera.position.copy(this.initialCameraPos);
             this.setCameraDefault();
             /* update inputs */
-            for (const key in this.boids.options) {
-                const input = document.querySelector(`#${key}_input`);
-                if (input) input.value = this.boids.options[key];
-            }
+            this.setNumInputs();
         })
 
         document.querySelector('#button2D').addEventListener('click', (e) => {
@@ -387,7 +384,14 @@ class App {
             );
         this.renderer.scene.add(this.boids.boidsGroup);
         this.boidsReady = true;
-        this.numInputs.homeDist.value = this.boids.options.homeDist;
+        this.setNumInputs();
+    }
+
+    setNumInputs = () => {
+        // sync the options with the dom values
+        for (const key in this.numInputs) {
+            this.numInputs[key].value = this.boids.options[key] | 0;
+        }
     }
 
     stop = () => {
