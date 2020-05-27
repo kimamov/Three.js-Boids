@@ -235,6 +235,23 @@ class App {
 
     }
 
+    resetOptions3d = () => {
+        /* reset boids options */
+        this.boids.options = {
+            ...this.initialBoidsOptions
+        };
+        /* rest renderer camera position */
+        this.renderer.camera.position.copy(this.initialCameraPos);
+        this.setCameraDefault();
+    }
+
+    resetOptions2d = () => {
+        this.boids.options = {
+            ...this.boids2dDefaultValues
+        };
+
+    }
+
     createButtonControlls = () => {
         document.querySelector('#startStopButton').addEventListener('click', (e) => {
             this.stopStart();
@@ -243,12 +260,7 @@ class App {
 
         document.querySelector('#resetButton').addEventListener('click', (e) => {
             /* reset boids options */
-            this.boids.options = {
-                ...this.initialBoidsOptions
-            };
-            /* rest renderer camera position */
-            this.renderer.camera.position.copy(this.initialCameraPos);
-            this.setCameraDefault();
+            this.mode == "2d" ? this.resetOptions2d() : this.resetOptions3d();
             /* update inputs */
             this.setNumInputs();
         })
@@ -376,11 +388,15 @@ class App {
         this.mode === "2D" ? (
                 this.boids.createRandom2D(this.count),
                 // 2d renderer has a way different dimensions of the view so options need to be adjusted
-                this.boids.options = boids2dDefaultValues
+                this.boids.options = {
+                    ...boids2dDefaultValues
+                }
             ) :
             (
                 this.boids.createRandom3D(this.count),
-                this.boids.homeDist = this.initialBoidsOptions.homeDist
+                this.boids.options = {
+                    ...this.initialBoidsOptions
+                }
             );
         this.renderer.scene.add(this.boids.boidsGroup);
         this.boidsReady = true;
@@ -390,7 +406,7 @@ class App {
     setNumInputs = () => {
         // sync the options with the dom values
         for (const key in this.numInputs) {
-            this.numInputs[key].value = this.boids.options[key] | 0;
+            this.numInputs[key].value = this.boids.options[key];
         }
     }
 
