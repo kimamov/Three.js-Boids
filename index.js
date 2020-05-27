@@ -107,6 +107,7 @@ class Boids {
         this.boidsGroup = new THREE.Group();
 
         this.options = options;
+        this.prevHomeDist = this.options.homeDist;
     }
 
 
@@ -139,25 +140,6 @@ class Boids {
 
     createBoid3D = (posX, posY, posZ) => this.createBoid(posX, posY, posZ)
 
-    updateBoidsOptions = (
-        options = {
-            acceleration,
-            velocity,
-            maxForce,
-            maxSpeed,
-            seperationDist,
-            allignDist,
-            cohesionDist,
-            homeDist,
-            seperationWeight,
-            allignmentWeight,
-            cohesionWeight
-        }) => {
-        /* loop over all boids and update their options */
-        for (const boid of this.boidsGroup.children) {
-            boid.updateOptions(options);
-        }
-    }
 
     clearBoids = () => {
         this.boidsGroup = new THREE.Group();
@@ -171,15 +153,21 @@ class Boids {
     createRandom = (count = 60, type = "3D") => {
         this.clearBoids();
         if (type === "2D") {
+            // orthographic camera has way different dimensions of the view
+            this.prevHomeDist = this.homeDist; // save homeDist to restore when going back to 3d
+            this.homeDist = this.minScreen(); // set homeDist to the smaller dimension of the canvas
             for (let i = 0; i < count; i++) {
                 const posXScreenRange = (Math.random() - 0.5) * window.innerWidth;
                 const posYScreenRange = (Math.random() - 0.5) * window.innerHeight;
                 this.createBoid2D(posXScreenRange, posYScreenRange);
             }
-        } else
+        } else {
+            this.homeDist = this.prevHomeDist;
             for (let i = 0; i < count; i++) {
                 this.createBoid3D(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5);
             }
+
+        }
         return this.boids;
     }
 
