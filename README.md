@@ -9,7 +9,7 @@ serve index.html with your local server of choice.
 
 # Warning
 default values for 2d boids are somewhat horrible.
-Just double all the distances and forces and distances to get more action
+Just double all the distances and forces to get more action
 
 # TODO
 Speed of free camera equals the boids speed wich is fine for low speeds but impossible to handle when you increase it to much.
