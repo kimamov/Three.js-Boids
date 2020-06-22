@@ -427,7 +427,7 @@ const boids2dDefaultValues = () => {
     return {
         maxForce: 0.20,
         maxSpeed: 1.6,
-        seperationDist: 5.1,
+        seperationDist: 3.2,
         allignDist: 40,
         cohesionDist: 40,
         homeDist: Boids.minScreen() | 200,
