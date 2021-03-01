@@ -17,6 +17,6 @@
   },
   "homepage": "https://github.com/kantimam/Three.js-Boids#readme",
   "dependencies": {
-    "three": "^0.115.0"
+    "three": "^0.125.0"
   }
 }
